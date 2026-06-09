@@ -1,0 +1,6 @@
+{
+  "appId": "com.yourname.birthdays",
+  "appName": "Birthdays",
+  "webDir": "src",
+  "bundledWebRuntime": true
+}
