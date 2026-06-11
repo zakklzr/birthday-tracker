@@ -18,6 +18,9 @@
         input { width: 100%; padding: 0.5rem; margin-bottom: 1rem; box-sizing: border-box; }
         .btn { background: #6200ea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; width: 100%; font-size: 16px;}
         .close-btn { background: #ccc; color: black; margin-top: 10px; }
+        
+        /* Test Button Style */
+        #testNotifBtn { background: #03dac6; color: black; margin-top: 1rem; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -26,8 +29,12 @@
         <h2>Birthdays</h2>
     </header>
 
-    <div class="container" id="birthday-list">
-        </div>
+    <div class="container">
+        <div id="birthday-list">
+            </div>
+        
+        <button class="btn" id="testNotifBtn" onclick="testNotification()">Test Notification (5s Delay)</button>
+    </div>
 
     <button class="fab" onclick="openModal()">+</button>
 
@@ -43,6 +50,15 @@
 
     <script src="capacitor.js"></script>
     <script>
+        // --- ENVIRONMENT FLAG ---
+        // Change this to 'prod' before building your final version for personal use
+        const ENV = 'test'; 
+
+        // Hide test features if in production
+        if (ENV === 'prod') {
+            document.getElementById('testNotifBtn').style.display = 'none';
+        }
+
         let birthdays = JSON.parse(localStorage.getItem('birthdays')) || [];
 
         function openModal() { document.getElementById('addModal').style.display = 'flex'; }
@@ -52,7 +68,6 @@
             const list = document.getElementById('birthday-list');
             list.innerHTML = '';
             
-            // Sort by upcoming calendar order
             const today = new Date();
             let upcoming = birthdays.map(b => {
                 let bDate = new Date(b.date);
@@ -94,7 +109,6 @@
             renderBirthdays();
         }
 
-        // Native Push Notifications via Capacitor
         async function scheduleNotifications(upcomingBirthdays) {
             if (!window.Capacitor || !window.Capacitor.Plugins.LocalNotifications) return;
             const { LocalNotifications } = window.Capacitor.Plugins;
@@ -104,12 +118,12 @@
 
             let notificationsToSchedule = upcomingBirthdays.map(b => {
                 let notifyDate = new Date(b.nextDate);
-                notifyDate.setHours(10, 0, 0, 0); // 10:00 AM
+                notifyDate.setHours(10, 0, 0, 0); 
                 
                 return {
                     title: "It's a Birthday!",
                     body: `Today is ${b.name}'s birthday!`,
-                    id: parseInt(b.id.slice(-5)), // Capacitor requires integer IDs
+                    id: parseInt(b.id.slice(-5)), 
                     schedule: { at: notifyDate }
                 };
             });
@@ -117,6 +131,35 @@
             if(notificationsToSchedule.length > 0) {
                 await LocalNotifications.schedule({ notifications: notificationsToSchedule });
             }
+        }
+
+        // --- TEST NOTIFICATION LOGIC ---
+        async function testNotification() {
+            if (!window.Capacitor || !window.Capacitor.Plugins.LocalNotifications) {
+                alert("Native notifications are only available in the Android app, not the web preview.");
+                return;
+            }
+            
+            const { LocalNotifications } = window.Capacitor.Plugins;
+            
+            // Ask for permissions (triggers the Android popup if not granted yet)
+            await LocalNotifications.requestPermissions();
+            
+            // Schedule for 5 seconds from right now
+            const notifyDate = new Date(Date.now() + 5000); 
+            
+            await LocalNotifications.schedule({
+                notifications: [
+                    {
+                        title: "Test Successful! 🚀",
+                        body: "Your background notifications are working perfectly.",
+                        id: 99999, // Unique test ID
+                        schedule: { at: notifyDate }
+                    }
+                ]
+            });
+
+            alert("Test scheduled! Background the app or turn off your screen for 5 seconds.");
         }
 
         renderBirthdays();
